@@ -160,7 +160,6 @@ int handle_decimals(char **str, int *i, double num, int precision)
 	char *tmp_str;
 	int k;
 	int tmp_num;
-	int flag;
 	double ac = 0.5;
 
 	k = 0;
@@ -170,9 +169,8 @@ int handle_decimals(char **str, int *i, double num, int precision)
 	tmp_str = *str;
 	k = 0;
 
-	if (precision != 0)
-		tmp_str[(*i)++] = '.';
-	else
+	tmp_str[(*i)++] = '.';
+
 
 	while (k++ <= precision)
 	{
@@ -199,19 +197,24 @@ void rev_str (char **str, int size)
 	char temp;
 
 	i = 0;
+	printf ("bef = %s\n", *str);
+//	printf ("rev size %d\n", size);
 	while (i < size/2)
 	{
 		temp = (*str)[i];
-		(*str)[i] = (*str)[size - i -1];
-		(*str)[size - i -1] = temp;
+
+		(*str)[i] = (*str)[size - i - 1];
+
+		(*str)[size - i - 1] = temp;
 		i++;
 	}
+
 }
 
-void plus_one(char** str, int size)
+void plus_one(char** str, int *size)
 {
-	char *tmp_a = malloc(sizeof(char)*(size+2));
-	int i = size;
+	char *tmp_a = malloc(sizeof(char)*((*size)+2));
+	int i = (*size);
 	int carry = 0;
 	int j = 0;
 	int temp = 0;
@@ -219,22 +222,30 @@ void plus_one(char** str, int size)
 
 	// вот здесь проблема с точкой
 
-	while (i >= 0)
+	while (i >= 0 || carry > 0)
 	{
 		if ((*str)[i] == '.')
 			tmp_a[j] = '.';
-		else {
-			temp = ((*str)[i] - '0') + flag + carry; //а точнее тут, выход за пределы массива получается....
+		else
+		{
+			if ((*str)[i] - '0' >= 0 && (*str)[i] - '0' <= 9)
+				temp = ((*str)[i] - '0') + flag + carry;
+			else
+				temp = flag + carry;
 			flag = 0;
 			carry = temp / 10;
 			tmp_a[j] = (temp % 10) + '0';
 		}
 		j++;
 		i--;
+		i == -2 ? (*size)++ : 0;
 	}
 	tmp_a[j] = '\0';
+	//*str = tmp_a;
+//	printf("tmp_a %s\n", tmp_a);
+//	printf("size %d\n", size);
+	rev_str(&tmp_a, (*size)+1);
 	*str = tmp_a;
-	rev_str(&(*str), size+1);
 }
 
 int float_to_str(char **str, double num, int precision, int neg)
@@ -262,12 +273,14 @@ int float_to_str(char **str, double num, int precision, int neg)
 	if (handle_decimals(&tmp_str, &i, num, precision))
 	{
 		tmp_str[i] = '\0';
-		plus_one(&tmp_str, size);
+		plus_one(&tmp_str, &size);
 	}
 	else
 		tmp_str[i] = '\0';
 	*str = tmp_str;
-
+//	printf("str = %s\n", *str);
+//	printf("size = %d\n", size);
+	precision == 0 ? (*str)[size--] = '\0' : 0;
 	return (size);
 }
 
@@ -281,7 +294,7 @@ int treat_f_float(t_param param, va_list arg)
 		param.precision = 6;
 	neg = 0;
 	size = float_to_str(&str, va_arg(arg, double), param.precision, neg);
-
+	printf("size = %d\n", size);
 
 	if (param.width >= size && param.flags == FLAG_PLUS)
 		return(repeat_write(' ', param.width-(size+2)) + pf_write("+", 1, 0) + pf_write(str, size+1, 0));
